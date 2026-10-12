@@ -1,463 +1,396 @@
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
+const DB_KEY = "lifeOSData_v1";
+const SESSION_KEY = "lifeOSSession_v1";
 
-const STORAGE_KEY = "studyTrackerData";
+const quotes = [
+  "You don't have to see the whole staircase, just take the first step.",
+  "Small steps every day add up to big change.",
+  "You are allowed to be a work in progress and still be proud of yourself.",
+  "Focus on the next step, not the whole staircase.",
+  "Discipline is choosing what you want most over what you want now.",
+  "Start where you are. Use what you have. Do what you can.",
+  "Your future is built by what you do today."
+];
+const tracks = [
+  { title: "Midnight Focus", artist: "Ambient study mix", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+  { title: "Open Skies", artist: "Instrumental flow", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+  { title: "Slow Orbit", artist: "Deep work soundtrack", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" }
+];
 
-const defaultData = {
-    subjects: [],
-    tasks: []
-};
+let users = readDB();
+let currentUser = null;
+let data = null;
+let authMode = "login";
+let taskFilter = "all";
+let quoteIndex = Math.floor(Math.random() * quotes.length);
+let trackIndex = 0;
+let toastTimer;
+let timerDuration = 25 * 60;
+let timerRemaining = timerDuration;
+let timerInterval = null;
+let timerRunning = false;
+let timerModeMinutes = 25;
+let sessionStartedAt = null;
 
-let data = loadData();
-let currentFilter = "all";
-
-const subjectForm = document.getElementById("subjectForm");
-const subjectName = document.getElementById("subjectName");
-const subjectList = document.getElementById("subjectList");
-
-const taskForm = document.getElementById("taskForm");
-const taskName = document.getElementById("taskName");
-const taskSubject = document.getElementById("taskSubject");
-const taskList = document.getElementById("taskList");
-
-const totalSubjects = document.getElementById("totalSubjects");
-const totalTasks = document.getElementById("totalTasks");
-const completedTasks = document.getElementById("completedTasks");
-const progressPercent = document.getElementById("progressPercent");
-const progressBar = document.getElementById("progressBar");
-const progressLabel = document.getElementById("progressLabel");
-const todayDate = document.getElementById("todayDate");
-
-
-// Load saved data from the browser
-function loadData() {
-    try {
-        const savedData = localStorage.getItem(STORAGE_KEY);
-
-        if (!savedData) {
-            return {
-                subjects: [],
-                tasks: []
-            };
-        }
-
-        const parsedData = JSON.parse(savedData);
-
-        if (
-            !parsedData ||
-            !Array.isArray(parsedData.subjects) ||
-            !Array.isArray(parsedData.tasks)
-        ) {
-            return {
-                subjects: [],
-                tasks: []
-            };
-        }
-
-        return parsedData;
-    } catch (error) {
-        console.error("Could not load saved data:", error);
-        return {
-            subjects: [],
-            tasks: []
-        };
-    }
+function readDB() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(DB_KEY) || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch { return {}; }
 }
-
-
-// Save data to the browser
-function saveData() {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (error) {
-        alert("Data save nahi ho paya. Browser storage check karo.");
-        console.error("Could not save data:", error);
-    }
+function saveDB() {
+  try { localStorage.setItem(DB_KEY, JSON.stringify(users)); }
+  catch { showToast("Browser storage is unavailable."); }
 }
-
-
-// Create HTML elements safely
-function createElement(tag, className, text = "") {
-    const element = document.createElement(tag);
-
-    if (className) {
-        element.className = className;
-    }
-
-    element.textContent = text;
-
-    return element;
+function todayKey(date = new Date()) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
-
-
-// Find a subject using its ID
-function getSubject(subjectId) {
-    return data.subjects.find(
-        subject => subject.id === subjectId
-    );
+function defaultData(name, email) {
+  return {
+    name, email, tasks: [], focusByDay: {}, completedByDay: {}, sessionsByDay: {},
+    createdAt: new Date().toISOString()
+  };
 }
-
-
-// Display today's date
-function showDate() {
-    todayDate.textContent = new Date().toLocaleDateString(
-        "en-IN",
-        {
-            day: "numeric",
-            month: "short",
-            year: "numeric"
-        }
-    );
+function safeText(value) { return String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c])); }
+function showToast(message) {
+  const toast = $("#toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
 }
+function setAuthMode(mode) {
+  authMode = mode;
+  const signup = mode === "signup";
+  $("#authTitle").innerHTML = signup ? 'Create your space<span class="accent">.</span>' : 'Welcome back<span class="accent">.</span>';
+  $("#authSubtitle").textContent = signup ? "A fresh start, designed around you." : "Your day, your goals, your rhythm.";
+  $("#authName").classList.toggle("hidden", !signup);
+  $("#nameLabel").classList.toggle("hidden", !signup);
+  $("#authName").required = signup;
+  $("#authPassword").autocomplete = signup ? "new-password" : "current-password";
+  $("#authSubmit").innerHTML = signup ? 'Create my account <span>↗</span>' : 'Enter your space <span>↗</span>';
+  $("#switchText").textContent = signup ? "Already have an account?" : "New around here?";
+  $("#switchAuth").textContent = signup ? "Sign in" : "Create account";
+  $("#authError").textContent = "";
+}
+$("#switchAuth").addEventListener("click", () => setAuthMode(authMode === "login" ? "signup" : "login"));
 
+$("#authForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = $("#authName").value.trim();
+  const email = $("#authEmail").value.trim().toLowerCase();
+  const password = $("#authPassword").value;
+  const error = $("#authError");
+  error.textContent = "";
+  if (!email || password.length < 4) { error.textContent = "Email aur kam se kam 4-character password daalo."; return; }
 
-// Add a new subject
-subjectForm.addEventListener("submit", function (event) {
-    event.preventDefault();
-
-    const name = subjectName.value.trim();
-
-    if (!name) {
-        return;
-    }
-
-    const alreadyExists = data.subjects.some(
-        subject => subject.name.toLowerCase() === name.toLowerCase()
-    );
-
-    if (alreadyExists) {
-        alert("Ye subject pehle se added hai!");
-        return;
-    }
-
-    const subject = {
-        id: crypto.randomUUID(),
-        name: name,
-        createdAt: Date.now()
-    };
-
-    data.subjects.push(subject);
-
-    saveData();
-    subjectForm.reset();
-    renderAll();
-    subjectName.focus();
+  if (authMode === "signup") {
+    if (name.length < 2) { error.textContent = "Apna naam kam se kam 2 letters mein likho."; return; }
+    if (users[email]) { error.textContent = "Is email se account pehle se hai. Sign in karo."; return; }
+    // Demo-only local account: do not reuse a real password here.
+    users[email] = { password, data: defaultData(name, email) };
+    saveDB();
+    signIn(email);
+    showToast("Welcome to your new space!");
+  } else {
+    const user = users[email];
+    if (!user || user.password !== password) { error.textContent = "Email ya password match nahi hua."; return; }
+    signIn(email);
+    showToast("Welcome back!");
+  }
 });
-
-
-// Display all subjects
-function renderSubjects() {
-    subjectList.replaceChildren();
-
-    if (data.subjects.length === 0) {
-        const empty = createElement(
-            "div",
-            "empty-state",
-            "Abhi koi subject nahi hai. Apna pehla subject add karo!"
-        );
-
-        subjectList.appendChild(empty);
-    }
-
-    data.subjects.forEach(function (subject, index) {
-        const item = createElement("div", "subject-item");
-
-        const dot = createElement("span", "subject-dot");
-
-        const colors = [
-            "#9270ff",
-            "#65b7ff",
-            "#54d6a0",
-            "#ffb86b",
-            "#ff8eaa"
-        ];
-
-        dot.style.backgroundColor = colors[index % colors.length];
-
-        const info = createElement("div", "subject-info");
-        const title = createElement("strong", "", subject.name);
-
-        const count = data.tasks.filter(
-            task => task.subjectId === subject.id
-        ).length;
-
-        const description = createElement(
-            "p",
-            "",
-            count + (count === 1 ? " study task" : " study tasks")
-        );
-
-        info.append(title, description);
-
-        const deleteButton = createElement(
-            "button",
-            "delete-btn",
-            "×"
-        );
-
-        deleteButton.type = "button";
-        deleteButton.title = "Delete subject";
-        deleteButton.setAttribute(
-            "aria-label",
-            "Delete subject " + subject.name
-        );
-
-        deleteButton.addEventListener("click", function () {
-            const confirmed = confirm(
-                'Delete "' + subject.name +
-                '" and all its study tasks?'
-            );
-
-            if (!confirmed) {
-                return;
-            }
-
-            data.subjects = data.subjects.filter(
-                item => item.id !== subject.id
-            );
-
-            data.tasks = data.tasks.filter(
-                task => task.subjectId !== subject.id
-            );
-
-            saveData();
-            renderAll();
-        });
-
-        item.append(dot, info, deleteButton);
-        subjectList.appendChild(item);
-    });
-
-    // Update subject dropdown
-    const previousSelection = taskSubject.value;
-
-    taskSubject.replaceChildren();
-
-    const placeholder = createElement(
-        "option",
-        "",
-        data.subjects.length
-            ? "Select a subject"
-            : "Add a subject first"
-    );
-
-    placeholder.value = "";
-    taskSubject.appendChild(placeholder);
-
-    data.subjects.forEach(function (subject) {
-        const option = createElement(
-            "option",
-            "",
-            subject.name
-        );
-
-        option.value = subject.id;
-        taskSubject.appendChild(option);
-    });
-
-    if (
-        data.subjects.some(
-            subject => subject.id === previousSelection
-        )
-    ) {
-        taskSubject.value = previousSelection;
-    }
-
-    taskSubject.disabled = data.subjects.length === 0;
+function signIn(email) {
+  currentUser = email;
+  data = users[email].data || defaultData(email.split("@")[0], email);
+  users[email].data = data;
+  try { sessionStorage.setItem(SESSION_KEY, email); } catch {}
+  $("#authScreen").classList.add("hidden");
+  $("#appScreen").classList.remove("hidden");
+  updateProfile();
+  updateDate();
+  renderAll();
+  showPage("overview");
 }
+function signOut() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  timerRunning = false;
+  try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+  currentUser = null; data = null;
+  $("#appScreen").classList.add("hidden");
+  $("#authScreen").classList.remove("hidden");
+  $("#authPassword").value = "";
+  setAuthMode("login");
+}
+$("#logoutBtn").addEventListener("click", signOut);
+function updateProfile() {
+  const name = data.name || "Your name";
+  $("#sideName").textContent = name;
+  $("#sideEmail").textContent = data.email;
+  $("#avatar").textContent = name.trim().charAt(0).toUpperCase() || "L";
+}
+function updateDate() {
+  const now = new Date();
+  $("#todayDate").textContent = now.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" });
+}
+function persist() {
+  if (!currentUser || !users[currentUser]) return;
+  users[currentUser].data = data;
+  saveDB();
+}
+function showPage(page) {
+  const pageNames = { overview:"Overview", tasks:"My tasks", insights:"Insights", focus:"Focus room" };
+  Object.keys(pageNames).forEach(key => $(`#${key}Page`).classList.toggle("hidden", key !== page));
+  $$(".nav-item[data-target]").forEach(button => button.classList.toggle("active", button.dataset.target === page));
+  $("#pageCrumb").textContent = pageNames[page] || "Overview";
+  if (page === "insights") renderInsights();
+  if (page === "focus") updateFocusStats();
+  window.scrollTo({ top:0, behavior:"smooth" });
+}
+$$(".nav-item[data-target]").forEach(button => button.addEventListener("click", () => showPage(button.dataset.target)));
+$$("[data-goto]").forEach(button => button.addEventListener("click", () => showPage(button.dataset.goto)));
 
+function addTask(value) {
+  const title = value.trim();
+  if (!title) return;
+  data.tasks.unshift({ id: `${Date.now()}_${Math.random().toString(16).slice(2)}`, title, done:false, createdAt:todayKey(), completedAt:null });
+  persist(); renderAll(); showToast("Task added. One step closer.");
+}
+$("#quickTaskForm").addEventListener("submit", event => { event.preventDefault(); addTask($("#quickTaskInput").value); $("#quickTaskInput").value = ""; });
+$("#fullTaskForm").addEventListener("submit", event => { event.preventDefault(); addTask($("#fullTaskInput").value); $("#fullTaskInput").value = ""; });
 
-// Add a new study task
-taskForm.addEventListener("submit", function (event) {
-    event.preventDefault();
-
-    const name = taskName.value.trim();
-    const subjectId = taskSubject.value;
-
-    if (!name || !getSubject(subjectId)) {
-        alert("Pehle ek valid subject select karo.");
-        return;
-    }
-
-    const task = {
-        id: crypto.randomUUID(),
-        name: name,
-        subjectId: subjectId,
-        completed: false,
-        createdAt: Date.now()
-    };
-
-    data.tasks.unshift(task);
-
-    saveData();
-    taskForm.reset();
-
-    currentFilter = "all";
-    updateFilterButtons();
-    renderAll();
-
-    taskName.focus();
-});
-
-
-// Display study tasks
+function toggleTask(id) {
+  const task = data.tasks.find(item => item.id === id);
+  if (!task) return;
+  task.done = !task.done;
+  task.completedAt = task.done ? todayKey() : null;
+  persist(); renderAll();
+  showToast(task.done ? "Task completed. Nice work!" : "Task moved back to in progress.");
+}
+function deleteTask(id) {
+  data.tasks = data.tasks.filter(task => task.id !== id);
+  persist(); renderAll(); showToast("Task removed.");
+}
+function taskMarkup(task) {
+  const completed = task.done ? " completed" : "";
+  const dateText = task.done ? "Done" : (task.createdAt === todayKey() ? "Today" : new Date(task.createdAt + "T12:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"}));
+  return `<div class="task-row${completed}"><button class="task-check${task.done ? " done" : ""}" data-toggle-task="${safeText(task.id)}" aria-label="${task.done ? "Mark incomplete" : "Complete task"}">${task.done ? "✓" : ""}</button><span class="task-name">${safeText(task.title)}</span><span class="task-date">${dateText}</span><button class="delete-task" data-delete-task="${safeText(task.id)}" aria-label="Delete task">×</button></div>`;
+}
+function wireTaskButtons(root) {
+  root.querySelectorAll("[data-toggle-task]").forEach(btn => btn.addEventListener("click", () => toggleTask(btn.dataset.toggleTask)));
+  root.querySelectorAll("[data-delete-task]").forEach(btn => btn.addEventListener("click", () => deleteTask(btn.dataset.deleteTask)));
+}
 function renderTasks() {
-    taskList.replaceChildren();
+  const today = todayKey();
+  const todayTasks = data.tasks.filter(task => task.createdAt === today || task.completedAt === today);
+  const quickList = $("#quickTaskList");
+  const quickItems = todayTasks.slice(0, 5);
+  quickList.innerHTML = quickItems.map(taskMarkup).join("");
+  $("#emptyQuickTasks").classList.toggle("hidden", quickItems.length > 0);
+  wireTaskButtons(quickList);
 
-    const filteredTasks = data.tasks.filter(function (task) {
-        if (currentFilter === "pending") {
-            return !task.completed;
-        }
-
-        if (currentFilter === "completed") {
-            return task.completed;
-        }
-
-        return true;
-    });
-
-    if (filteredTasks.length === 0) {
-        let message = "Abhi koi task nahi hai. Apna pehla task add karo!";
-
-        if (currentFilter === "pending") {
-            message = "Great! Koi pending task nahi hai.";
-        } else if (currentFilter === "completed") {
-            message = "Abhi koi completed task nahi hai.";
-        }
-
-        const empty = createElement("div", "empty-state");
-        const icon = createElement("span", "", "✓");
-        const text = createElement("p", "", message);
-
-        empty.append(icon, text);
-        taskList.appendChild(empty);
-    }
-
-    filteredTasks.forEach(function (task) {
-        const item = createElement(
-            "div",
-            task.completed ? "task-item completed" : "task-item"
-        );
-
-        const checkbox = createElement("input", "task-check");
-
-        checkbox.type = "checkbox";
-        checkbox.checked = task.completed;
-        checkbox.setAttribute(
-            "aria-label",
-            "Mark " + task.name + " as completed"
-        );
-
-        checkbox.addEventListener("change", function () {
-            task.completed = checkbox.checked;
-
-            saveData();
-            renderAll();
-        });
-
-        const info = createElement("div", "task-info");
-        const title = createElement("strong", "", task.name);
-
-        const subject = getSubject(task.subjectId);
-
-        const description = createElement(
-            "p",
-            "",
-            subject ? subject.name : "Unknown subject"
-        );
-
-        info.append(title, description);
-
-        const deleteButton = createElement(
-            "button",
-            "delete-btn",
-            "×"
-        );
-
-        deleteButton.type = "button";
-        deleteButton.title = "Delete task";
-        deleteButton.setAttribute(
-            "aria-label",
-            "Delete task " + task.name
-        );
-
-        deleteButton.addEventListener("click", function () {
-            data.tasks = data.tasks.filter(
-                item => item.id !== task.id
-            );
-
-            saveData();
-            renderAll();
-        });
-
-        item.append(checkbox, info, deleteButton);
-        taskList.appendChild(item);
-    });
+  let filtered = data.tasks;
+  if (taskFilter === "active") filtered = filtered.filter(task => !task.done);
+  if (taskFilter === "done") filtered = filtered.filter(task => task.done);
+  const fullList = $("#fullTaskList");
+  fullList.innerHTML = filtered.map(taskMarkup).join("");
+  $("#emptyFullTasks").classList.toggle("hidden", filtered.length > 0);
+  wireTaskButtons(fullList);
+  const doneToday = data.tasks.filter(task => task.done && task.completedAt === today).length;
+  $("#completedStat").textContent = doneToday;
+  $("#taskStatCaption").textContent = `${data.tasks.filter(task => task.createdAt === today).length} tasks planned today`;
+  const totalToday = data.tasks.filter(task => task.createdAt === today).length;
+  $("#taskProgressBar").style.width = `${totalToday ? Math.min(100, doneToday / totalToday * 100) : 0}%`;
+  $("#navTaskCount").textContent = data.tasks.filter(task => !task.done).length;
+  $("#allTaskCount").innerHTML = `${data.tasks.length} <small>TOTAL</small>`;
+  $("#allTimeDone").textContent = data.tasks.filter(task => task.done).length;
+  $("#allTimeTasks").textContent = data.tasks.length;
 }
+$$(".filter-btn").forEach(button => button.addEventListener("click", () => {
+  taskFilter = button.dataset.filter;
+  $$(".filter-btn").forEach(btn => btn.classList.toggle("active", btn === button));
+  if (data) renderTasks();
+}));
 
-
-// Update dashboard statistics
+function dateRange(days = 7) {
+  const dates = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date();
+    date.setHours(12,0,0,0);
+    date.setDate(date.getDate() - i);
+    dates.push({ key:todayKey(date), label:date.toLocaleDateString(undefined,{weekday:"short"}), isToday:i === 0 });
+  }
+  return dates;
+}
+function countsByDay() {
+  const counts = {};
+  data.tasks.forEach(task => {
+    if (task.done && task.completedAt) counts[task.completedAt] = (counts[task.completedAt] || 0) + 1;
+  });
+  return counts;
+}
+function renderChart(element, large = false) {
+  const counts = countsByDay();
+  const dates = dateRange();
+  const max = Math.max(1, ...dates.map(day => counts[day.key] || 0));
+  element.innerHTML = dates.map(day => {
+    const value = counts[day.key] || 0;
+    const height = value ? Math.max(8, value / max * 100) : 3;
+    return `<div class="chart-column${day.isToday ? " today" : ""}"><span class="bar-value">${value}</span><div class="bar-track"><div class="bar-fill" style="height:${height}%"></div></div><span class="bar-label">${day.label}</span></div>`;
+  }).join("");
+  return dates.reduce((sum, day) => sum + (counts[day.key] || 0), 0);
+}
+function calculateStreak() {
+  const counts = countsByDay();
+  let streak = 0;
+  const date = new Date(); date.setHours(12,0,0,0);
+  // A streak may continue from yesterday if today hasn't been completed yet.
+  if (!counts[todayKey(date)]) date.setDate(date.getDate() - 1);
+  while (counts[todayKey(date)] > 0) {
+    streak++;
+    date.setDate(date.getDate() - 1);
+  }
+  return streak;
+}
+function totalFocus() { return Object.values(data.focusByDay || {}).reduce((sum, n) => sum + (Number(n) || 0), 0); }
 function renderStats() {
-    const total = data.tasks.length;
-
-    const completed = data.tasks.filter(
-        task => task.completed
-    ).length;
-
-    const percentage = total === 0
-        ? 0
-        : Math.round((completed / total) * 100);
-
-    totalSubjects.textContent = data.subjects.length;
-    totalTasks.textContent = total;
-    completedTasks.textContent = completed;
-
-    progressPercent.textContent = percentage + "%";
-    progressLabel.textContent = percentage + "% completed";
-    progressBar.style.width = percentage + "%";
-
-    progressBar.setAttribute("role", "progressbar");
-    progressBar.setAttribute("aria-valuemin", "0");
-    progressBar.setAttribute("aria-valuemax", "100");
-    progressBar.setAttribute("aria-valuenow", percentage);
+  const today = todayKey();
+  const focusToday = Number(data.focusByDay[today] || 0);
+  $("#focusMinutesStat").textContent = focusToday;
+  $("#focusProgressBar").style.width = `${Math.min(100, focusToday / 120 * 100)}%`;
+  const streak = calculateStreak();
+  $("#streakStat").textContent = streak;
+  $("#streakProgressBar").style.width = `${Math.min(100, streak / 7 * 100)}%`;
+  $("#focusTodayDetail").textContent = focusToday;
+  $("#allTimeFocus").textContent = `${totalFocus()}m`;
+  $("#sessionsToday").textContent = Number(data.sessionsByDay[today] || 0);
 }
-
-
-// Handle All, Pending and Completed filters
-document.querySelectorAll(".filter-btn").forEach(
-    function (button) {
-        button.addEventListener("click", function () {
-            currentFilter = button.dataset.filter;
-
-            updateFilterButtons();
-            renderTasks();
-        });
-    }
-);
-
-
-function updateFilterButtons() {
-    document.querySelectorAll(".filter-btn").forEach(
-        function (button) {
-            const isActive = button.dataset.filter === currentFilter;
-
-            button.classList.toggle("active", isActive);
-            button.setAttribute(
-                "aria-pressed",
-                String(isActive)
-            );
-        }
-    );
+function renderInsights() {
+  const total = renderChart($("#insightsChart"), true);
+  $("#weeklyTotal").textContent = total;
+  const focus = totalFocus();
+  $("#allTimeFocus").textContent = `${focus}m`;
 }
-
-
-// Render the entire website
 function renderAll() {
-    renderSubjects();
-    renderTasks();
-    renderStats();
+  renderTasks();
+  renderChart($("#activityChart"));
+  renderStats();
+  renderInsights();
+  $("#dailyQuote").textContent = quotes[quoteIndex];
 }
+$("#newQuoteBtn").addEventListener("click", () => {
+  quoteIndex = (quoteIndex + 1) % quotes.length;
+  $("#dailyQuote").textContent = quotes[quoteIndex];
+});
 
+function updateFocusStats() {
+  if (!data) return;
+  $("#focusTodayDetail").textContent = Number(data.focusByDay[todayKey()] || 0);
+  $("#sessionsToday").textContent = Number(data.sessionsByDay[todayKey()] || 0);
+}
+function setTimerPreset(minutes) {
+  if (timerRunning) pauseTimer();
+  timerModeMinutes = minutes;
+  timerDuration = minutes * 60;
+  timerRemaining = timerDuration;
+  $("#timerMode").textContent = minutes === 5 ? "SHORT BREAK" : "FOCUS TIME";
+  $("#timerSubtext").textContent = minutes === 5 ? "Rest is part of the work." : "One tab. One task.";
+  $$(".preset-btn").forEach(button => button.classList.toggle("active", Number(button.dataset.minutes) === minutes));
+  updateTimerDisplay();
+}
+function updateTimerDisplay() {
+  const mins = Math.floor(timerRemaining / 60);
+  const secs = timerRemaining % 60;
+  $("#timerDisplay").textContent = `${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
+  const progress = $("#timerProgress");
+  const circumference = 2 * Math.PI * 106;
+  progress.style.strokeDasharray = circumference;
+  progress.style.strokeDashoffset = circumference * (1 - timerRemaining / timerDuration);
+}
+function pauseTimer() {
+  clearInterval(timerInterval); timerInterval = null; timerRunning = false;
+  $("#timerStart").innerHTML = 'Resume focus <span>▶</span>';
+}
+function startTimer() {
+  if (timerRunning) { pauseTimer(); return; }
+  if (timerRemaining <= 0) setTimerPreset(timerModeMinutes);
+  timerRunning = true;
+  sessionStartedAt = Date.now();
+  $("#timerStart").innerHTML = 'Pause session <span>Ⅱ</span>';
+  timerInterval = setInterval(() => {
+    timerRemaining--;
+    updateTimerDisplay();
+    if (timerRemaining <= 0) completeTimer();
+  }, 1000);
+}
+function completeTimer() {
+  pauseTimer();
+  if (timerModeMinutes !== 5) {
+    const minutes = timerModeMinutes;
+    const today = todayKey();
+    data.focusByDay[today] = Number(data.focusByDay[today] || 0) + minutes;
+    data.sessionsByDay[today] = Number(data.sessionsByDay[today] || 0) + 1;
+    persist(); renderStats(); updateFocusStats();
+    showToast(`Focus session complete! +${minutes} minutes.`);
+  } else showToast("Break complete. Ready for another round?");
+  timerRemaining = 0; updateTimerDisplay();
+  $("#timerStart").innerHTML = 'Start again <span>▶</span>';
+}
+$$(".preset-btn").forEach(button => button.addEventListener("click", () => setTimerPreset(Number(button.dataset.minutes))));
+$("#timerStart").addEventListener("click", startTimer);
+$("#timerReset").addEventListener("click", () => { pauseTimer(); timerRemaining = timerDuration; updateTimerDisplay(); $("#timerStart").innerHTML = 'Start focus <span>▶</span>'; });
+updateTimerDisplay();
 
-// Start the website
-showDate();
-updateFilterButtons();
-renderAll();
+function loadTrack(index) {
+  trackIndex = (index + tracks.length) % tracks.length;
+  const track = tracks[trackIndex];
+  $("#trackTitle").textContent = track.title;
+  $("#trackArtist").textContent = track.artist;
+  $("#audioPlayer").src = track.url;
+  $("#trackProgress").style.width = "0%";
+  $("#musicStatus").textContent = "Ready to play";
+  $("#playMusic").textContent = "▶";
+  $$(".music-eq").forEach(el => el.classList.remove("playing"));
+}
+$("#playMusic").addEventListener("click", async () => {
+  const audio = $("#audioPlayer");
+  if (!audio.src) loadTrack(trackIndex);
+  if (audio.paused) {
+    try {
+      await audio.play();
+      $("#playMusic").textContent = "Ⅱ";
+      $("#musicStatus").textContent = "Now playing";
+      $$(".music-eq").forEach(el => el.classList.add("playing"));
+    } catch {
+      $("#musicStatus").textContent = "Playback unavailable";
+      showToast("Music ke liye internet connection check karo.");
+    }
+  } else {
+    audio.pause();
+    $("#playMusic").textContent = "▶";
+    $("#musicStatus").textContent = "Paused";
+    $$(".music-eq").forEach(el => el.classList.remove("playing"));
+  }
+});
+$("#prevTrack").addEventListener("click", () => { const wasPlaying = !$("#audioPlayer").paused; loadTrack(trackIndex - 1); if (wasPlaying) $("#playMusic").click(); });
+$("#nextTrack").addEventListener("click", () => { const wasPlaying = !$("#audioPlayer").paused; loadTrack(trackIndex + 1); if (wasPlaying) $("#playMusic").click(); });
+$("#audioPlayer").addEventListener("timeupdate", () => {
+  const audio = $("#audioPlayer");
+  if (audio.duration) $("#trackProgress").style.width = `${audio.currentTime / audio.duration * 100}%`;
+});
+$("#audioPlayer").addEventListener("ended", () => loadTrack(trackIndex + 1));
+$("#audioPlayer").addEventListener("error", () => {
+  $("#musicStatus").textContent = "Audio could not load";
+  $("#playMusic").textContent = "▶";
+  $$(".music-eq").forEach(el => el.classList.remove("playing"));
+});
+loadTrack(0);
+
+$("#themeHint").addEventListener("click", () => showToast("You're already in your dark + neon space ✧"));
+
+try {
+  const savedEmail = sessionStorage.getItem(SESSION_KEY);
+  if (savedEmail && users[savedEmail]) signIn(savedEmail);
+} catch {}
