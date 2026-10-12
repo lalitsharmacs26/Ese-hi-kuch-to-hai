@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+
+    <div class="app">
+
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">S</div>
+                <span>Study<span class="purple-text">Track</span></span>
+            </div>
+
+            <p class="menu-title">MENU</p>
+
+            <nav>
+                <a href="#dashboard" class="nav-link active">
+                    <span>▦</span> Dashboard
+                </a>
+                <a href="#subjects" class="nav-link">
+                    <span>▤</span> My Subjects
+                </a>
+                <a href="#tasks" class="nav-link">
+                    <span>✓</span> Study Tasks
+                </a>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <div class="mini-card">
+                    <span class="mini-icon">✦</span>
+                    <h3>Keep going!</h3>
+                    <p>Small steps every day lead to big results.</p>
+                </div>
+                <p class="sidebar-footer">STUDY SMART. GROW DAILY.</p>
+            </div>
+        </aside>
+
+        <main class="main-content" id="dashboard">
+
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">YOUR PERSONAL WORKSPACE</p>
+                    <h1>Study Dashboard</h1>
+                    <p class="subtitle">Plan your day. Track your progress.</p>
+                </div>
+                <div class="date-badge" id="todayDate"></div>
+            </header>
+
+            <section class="welcome-card">
+                <div>
+                    <p class="welcome-label">WELCOME BACK 👋</p>
+                    <h2>Ready to learn something new?</h2>
+                    <p>Stay consistent and make every study session count.</p>
+                </div>
+                <div class="welcome-symbol">✦</div>
+            </section>
+
+            <section class="stats-grid">
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span>Total Subjects</span>
+                        <span class="stat-icon purple-bg">▤</span>
+                    </div>
+                    <h2 id="totalSubjects">0</h2>
+                    <p>Your learning areas</p>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span>Total Tasks</span>
+                        <span class="stat-icon blue-bg">☷</span>
+                    </div>
+                    <h2 id="totalTasks">0</h2>
+                    <p>Tasks in your tracker</p>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span>Completed</span>
+                        <span class="stat-icon green-bg">✓</span>
+                    </div>
+                    <h2 id="completedTasks">0</h2>
+                    <p>Tasks finished</p>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span>Progress</span>
+                        <span class="stat-icon orange-bg">↗</span>
+                    </div>
+                    <h2 id="progressPercent">0%</h2>
+                    <p>Overall completion</p>
+                </article>
+            </section>
+
+            <section class="panel progress-panel">
+                <div class="section-heading">
+                    <div>
+                        <h2>Overall Progress</h2>
+                        <p>Every completed task moves you forward.</p>
+                    </div>
+                    <span class="progress-label" id="progressLabel">0% completed</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" id="progressBar"></div>
+                </div>
+            </section>
+
+            <section class="content-grid">
+
+                <div class="panel" id="subjects">
+                    <div class="section-heading">
+                        <div>
+                            <h2>My Subjects</h2>
+                            <p>Organize what you are learning.</p>
+                        </div>
+                    </div>
+
+                    <form id="subjectForm" class="form">
+                        <label for="subjectName">Subject name</label>
+                        <div class="input-row">
+                            <input
+                                type="text"
+                                id="subjectName"
+                                placeholder="e.g. C Programming"
+                                maxlength="50"
+                                required
+                            >
+                            <button type="submit" class="primary-btn">+ Add</button>
+                        </div>
+                    </form>
+
+                    <div id="subjectList" class="subject-list"></div>
+                </div>
+
+                <div class="panel" id="tasks">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Study Tasks</h2>
+                            <p>One task at a time.</p>
+                        </div>
+                    </div>
+
+                    <form id="taskForm" class="form">
+                        <label for="taskName">Task name</label>
+                        <input
+                            type="text"
+                            id="taskName"
+                            placeholder="e.g. Practice loops"
+                            maxlength="100"
+                            required
+                        >
+
+                        <label for="taskSubject">Choose subject</label>
+                        <select id="taskSubject" required>
+                            <option value="">Select a subject</option>
+                        </select>
+
+                        <button type="submit" class="primary-btn full-btn">
+                            + Add Study Task
+                        </button>
+                    </form>
+
+                    <div class="task-filters">
+                        <button type="button" class="filter-btn active"
+                            data-filter="all">All</button>
+                        <button type="button" class="filter-btn"
+                            data-filter="pending">Pending</button>
+                        <button type="button" class="filter-btn"
+                            data-filter="completed">Completed</button>
+                    </div>
+
+                    <div id="taskList" class="task-list"></div>
+                </div>
+
+            </section>
+
+            <footer class="page-footer">
+                Made for your learning journey <span>♥</span>
+            </footer>
+
+        </main>
+    </div>
+
+</body>
+</html>
