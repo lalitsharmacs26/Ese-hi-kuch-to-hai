@@ -1,193 +1,123 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Study Tracker</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#090b14">
+  <title>Life OS — Personal Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
 
-    <div class="app">
-
-        <aside class="sidebar">
-            <div class="logo">
-                <div class="logo-icon">S</div>
-                <span>Study<span class="purple-text">Track</span></span>
-            </div>
-
-            <p class="menu-title">MENU</p>
-
-            <nav>
-                <a href="#dashboard" class="nav-link active">
-                    <span>▦</span> Dashboard
-                </a>
-                <a href="#subjects" class="nav-link">
-                    <span>▤</span> My Subjects
-                </a>
-                <a href="#tasks" class="nav-link">
-                    <span>✓</span> Study Tasks
-                </a>
-            </nav>
-
-            <div class="sidebar-bottom">
-                <div class="mini-card">
-                    <span class="mini-icon">✦</span>
-                    <h3>Keep going!</h3>
-                    <p>Small steps every day lead to big results.</p>
-                </div>
-                <p class="sidebar-footer">STUDY SMART. GROW DAILY.</p>
-            </div>
-        </aside>
-
-        <main class="main-content" id="dashboard">
-
-            <header class="topbar">
-                <div>
-                    <p class="eyebrow">YOUR PERSONAL WORKSPACE</p>
-                    <h1>Study Dashboard</h1>
-                    <p class="subtitle">Plan your day. Track your progress.</p>
-                </div>
-                <div class="date-badge" id="todayDate"></div>
-            </header>
-
-            <section class="welcome-card">
-                <div>
-                    <p class="welcome-label">WELCOME BACK 👋</p>
-                    <h2>Ready to learn something new?</h2>
-                    <p>Stay consistent and make every study session count.</p>
-                </div>
-                <div class="welcome-symbol">✦</div>
-            </section>
-
-            <section class="stats-grid">
-                <article class="stat-card">
-                    <div class="stat-top">
-                        <span>Total Subjects</span>
-                        <span class="stat-icon purple-bg">▤</span>
-                    </div>
-                    <h2 id="totalSubjects">0</h2>
-                    <p>Your learning areas</p>
-                </article>
-
-                <article class="stat-card">
-                    <div class="stat-top">
-                        <span>Total Tasks</span>
-                        <span class="stat-icon blue-bg">☷</span>
-                    </div>
-                    <h2 id="totalTasks">0</h2>
-                    <p>Tasks in your tracker</p>
-                </article>
-
-                <article class="stat-card">
-                    <div class="stat-top">
-                        <span>Completed</span>
-                        <span class="stat-icon green-bg">✓</span>
-                    </div>
-                    <h2 id="completedTasks">0</h2>
-                    <p>Tasks finished</p>
-                </article>
-
-                <article class="stat-card">
-                    <div class="stat-top">
-                        <span>Progress</span>
-                        <span class="stat-icon orange-bg">↗</span>
-                    </div>
-                    <h2 id="progressPercent">0%</h2>
-                    <p>Overall completion</p>
-                </article>
-            </section>
-
-            <section class="panel progress-panel">
-                <div class="section-heading">
-                    <div>
-                        <h2>Overall Progress</h2>
-                        <p>Every completed task moves you forward.</p>
-                    </div>
-                    <span class="progress-label" id="progressLabel">0% completed</span>
-                </div>
-                <div class="progress-track">
-                    <div class="progress-fill" id="progressBar"></div>
-                </div>
-            </section>
-
-            <section class="content-grid">
-
-                <div class="panel" id="subjects">
-                    <div class="section-heading">
-                        <div>
-                            <h2>My Subjects</h2>
-                            <p>Organize what you are learning.</p>
-                        </div>
-                    </div>
-
-                    <form id="subjectForm" class="form">
-                        <label for="subjectName">Subject name</label>
-                        <div class="input-row">
-                            <input
-                                type="text"
-                                id="subjectName"
-                                placeholder="e.g. C Programming"
-                                maxlength="50"
-                                required
-                            >
-                            <button type="submit" class="primary-btn">+ Add</button>
-                        </div>
-                    </form>
-
-                    <div id="subjectList" class="subject-list"></div>
-                </div>
-
-                <div class="panel" id="tasks">
-                    <div class="section-heading">
-                        <div>
-                            <h2>Study Tasks</h2>
-                            <p>One task at a time.</p>
-                        </div>
-                    </div>
-
-                    <form id="taskForm" class="form">
-                        <label for="taskName">Task name</label>
-                        <input
-                            type="text"
-                            id="taskName"
-                            placeholder="e.g. Practice loops"
-                            maxlength="100"
-                            required
-                        >
-
-                        <label for="taskSubject">Choose subject</label>
-                        <select id="taskSubject" required>
-                            <option value="">Select a subject</option>
-                        </select>
-
-                        <button type="submit" class="primary-btn full-btn">
-                            + Add Study Task
-                        </button>
-                    </form>
-
-                    <div class="task-filters">
-                        <button type="button" class="filter-btn active"
-                            data-filter="all">All</button>
-                        <button type="button" class="filter-btn"
-                            data-filter="pending">Pending</button>
-                        <button type="button" class="filter-btn"
-                            data-filter="completed">Completed</button>
-                    </div>
-
-                    <div id="taskList" class="task-list"></div>
-                </div>
-
-            </section>
-
-            <footer class="page-footer">
-                Made for your learning journey <span>♥</span>
-            </footer>
-
-        </main>
+  <section id="authScreen" class="auth-screen">
+    <div class="auth-brand"><span class="brand-mark">✳</span><span>LIFE<span class="brand-accent">OS</span></span></div>
+    <div class="auth-card">
+      <div class="auth-eyebrow"><span class="pulse-dot"></span> YOUR PERSONAL SPACE</div>
+      <h1 id="authTitle">Welcome back<span class="accent">.</span></h1>
+      <p id="authSubtitle" class="muted">Your day, your goals, your rhythm.</p>
+      <form id="authForm">
+        <label for="authName" id="nameLabel" class="hidden">Your name</label>
+        <input id="authName" class="auth-input hidden" type="text" placeholder="Your name" autocomplete="name">
+        <label for="authEmail">Email</label>
+        <input id="authEmail" class="auth-input" type="email" placeholder="you@example.com" autocomplete="email" required>
+        <label for="authPassword">Password</label>
+        <input id="authPassword" class="auth-input" type="password" placeholder="At least 4 characters" minlength="4" autocomplete="current-password" required>
+        <p id="authError" class="error-text" role="alert"></p>
+        <button id="authSubmit" class="primary-btn full-btn" type="submit">Enter your space <span>↗</span></button>
+      </form>
+      <p class="auth-switch"><span id="switchText">New around here?</span> <button id="switchAuth" class="text-btn" type="button">Create account</button></p>
+      <div class="local-note"><span>▣</span> Demo mode · Account data stays in this browser</div>
     </div>
+    <p class="auth-footer">A little more intention. A little less noise.</p>
+  </section>
 
+  <div id="appScreen" class="app-shell hidden">
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="Life OS home"><span class="brand-mark">✳</span><span>LIFE<span class="brand-accent">OS</span></span></a>
+      <div class="workspace-label">WORKSPACE</div>
+      <nav class="side-nav" aria-label="Main navigation">
+        <button class="nav-item active" data-target="overview"><span class="nav-icon">◫</span> Overview</button>
+        <button class="nav-item" data-target="tasks"><span class="nav-icon">☑</span> My tasks <span id="navTaskCount" class="nav-count">0</span></button>
+        <button class="nav-item" data-target="insights"><span class="nav-icon">▥</span> Insights</button>
+        <button class="nav-item" data-target="focus"><span class="nav-icon">◷</span> Focus room</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="mini-card">
+          <div class="mini-card-icon">✦</div>
+          <div><strong>Keep your streak</strong><p>Small steps count.</p></div>
+        </div>
+        <button id="logoutBtn" class="nav-item logout"><span class="nav-icon">↪</span> Sign out</button>
+        <div class="profile-mini"><div id="avatar" class="avatar">L</div><div class="profile-info"><strong id="sideName">Your name</strong><span id="sideEmail">you@example.com</span></div><span class="profile-dots">•••</span></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="mobile-brand"><span class="brand-mark">✳</span> LIFE<span class="brand-accent">OS</span></div>
+        <div class="breadcrumb">Workspace <span>/</span> <strong id="pageCrumb">Overview</strong></div>
+        <div class="topbar-actions"><div class="date-chip"><span>◷</span> <span id="todayDate"></span></div><button id="themeHint" class="icon-btn" title="Your space">✧</button></div>
+      </header>
+
+      <section id="overviewPage" class="page-section">
+        <div class="welcome-row">
+          <div><div class="eyebrow"><span class="pulse-dot"></span> YOUR PERSONAL DASHBOARD</div><h1>Make today <span class="gradient-text">count.</span></h1><p class="muted">A clear mind starts with a clear plan.</p></div>
+          <div class="welcome-orb"><div class="orb-core">✳</div><span class="orb-ring ring-a"></span><span class="orb-ring ring-b"></span></div>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat-card"><div class="stat-top"><span>Tasks completed</span><span class="stat-icon cyan">✓</span></div><div class="stat-number" id="completedStat">0</div><div class="stat-foot"><span class="stat-dot cyan-dot"></span><span id="taskStatCaption">Your progress today</span></div><div class="stat-line"><span id="taskProgressBar"></span></div></article>
+          <article class="stat-card"><div class="stat-top"><span>Focus time</span><span class="stat-icon violet">◷</span></div><div class="stat-number"><span id="focusMinutesStat">0</span><small> min</small></div><div class="stat-foot"><span class="stat-dot violet-dot"></span><span>Time you've invested</span></div><div class="stat-line violet-line"><span id="focusProgressBar"></span></div></article>
+          <article class="stat-card"><div class="stat-top"><span>Current streak</span><span class="stat-icon orange">✦</span></div><div class="stat-number"><span id="streakStat">0</span><small> days</small></div><div class="stat-foot"><span class="stat-dot orange-dot"></span><span>Show up for yourself</span></div><div class="stat-line orange-line"><span id="streakProgressBar"></span></div></article>
+        </div>
+
+        <div class="content-grid">
+          <section class="panel tasks-panel" id="quickTasksPanel">
+            <div class="panel-heading"><div><div class="eyebrow">STAY ON TRACK</div><h2>Today's tasks</h2></div><button class="subtle-btn" data-goto="tasks">View all <span>↗</span></button></div>
+            <form id="quickTaskForm" class="add-task-form"><input id="quickTaskInput" type="text" placeholder="Add a task to your day..." maxlength="100" aria-label="New task"><button type="submit" class="add-btn" aria-label="Add task">+</button></form>
+            <div id="quickTaskList" class="task-list"></div>
+            <div id="emptyQuickTasks" class="empty-state"><span>✧</span><strong>A fresh page.</strong><p>Add one small task to get started.</p></div>
+          </section>
+          <section class="panel chart-panel">
+            <div class="panel-heading"><div><div class="eyebrow">YOUR CONSISTENCY</div><h2>Weekly activity</h2></div><span class="chart-tag">LAST 7 DAYS</span></div>
+            <div class="chart-summary"><strong id="weeklyTotal">0</strong><span>tasks completed</span></div>
+            <div id="activityChart" class="bar-chart" aria-label="Tasks completed over the last seven days"></div>
+            <div class="chart-legend"><span><i class="legend-dot"></i> Tasks completed</span><span id="chartInsight">Every step matters</span></div>
+          </section>
+        </div>
+
+        <div class="bottom-grid">
+          <section class="panel quote-panel"><div class="quote-symbol">“</div><p id="dailyQuote">You don't have to see the whole staircase, just take the first step.</p><div class="quote-credit"><span></span> A NOTE TO YOURSELF</div><button id="newQuoteBtn" class="quote-refresh" title="New quote">↻</button></section>
+          <section class="panel music-panel"><div class="panel-heading"><div><div class="eyebrow">SET THE MOOD</div><h2>Sound space</h2></div><span class="music-eq"><i></i><i></i><i></i></span></div>
+            <div class="music-content"><div class="album-art"><div class="album-sun"></div><div class="album-hill hill-one"></div><div class="album-hill hill-two"></div><span>FOCUS<br>FLOW</span></div><div class="track-info"><strong id="trackTitle">Midnight Focus</strong><span id="trackArtist">Ambient study mix</span><div class="music-controls"><button id="prevTrack" class="music-control" title="Previous track">|◀</button><button id="playMusic" class="play-btn" title="Play or pause">▶</button><button id="nextTrack" class="music-control" title="Next track">▶|</button></div></div></div>
+            <div class="track-progress"><span id="trackProgress"></span></div><div class="track-times"><span id="musicStatus">Ready to play</span><span>Ambient</span></div>
+            <audio id="audioPlayer" preload="none"></audio>
+          </section>
+        </div>
+        <footer class="app-footer">Made for your next chapter <span>✳</span></footer>
+      </section>
+
+      <section id="tasksPage" class="page-section hidden">
+        <div class="page-title-row"><div><div class="eyebrow">MAKE IT HAPPEN</div><h1>My <span class="gradient-text">tasks.</span></h1><p class="muted">One thing at a time. You've got this.</p></div><div class="big-number" id="allTaskCount">0 <small>TOTAL</small></div></div>
+        <section class="panel full-tasks-panel"><form id="fullTaskForm" class="add-task-form"><input id="fullTaskInput" type="text" placeholder="What's on your mind?" maxlength="100" aria-label="New task"><button type="submit" class="primary-btn">Add task <span>＋</span></button></form><div class="filter-row"><button class="filter-btn active" data-filter="all">All tasks</button><button class="filter-btn" data-filter="active">In progress</button><button class="filter-btn" data-filter="done">Completed</button></div><div id="fullTaskList" class="task-list full-task-list"></div><div id="emptyFullTasks" class="empty-state"><span>✧</span><strong>Nothing here yet.</strong><p>Add your first task above.</p></div></section>
+      </section>
+
+      <section id="insightsPage" class="page-section hidden">
+        <div class="page-title-row"><div><div class="eyebrow">NOTICE YOUR PROGRESS</div><h1>Your <span class="gradient-text">insights.</span></h1><p class="muted">Progress isn't always loud. Look how far you've come.</p></div></div>
+        <div class="insight-cards"><div class="panel insight-stat"><span class="insight-icon cyan">✓</span><span>All-time completed</span><strong id="allTimeDone">0</strong><small>tasks finished</small></div><div class="panel insight-stat"><span class="insight-icon violet">◷</span><span>Total focus time</span><strong id="allTimeFocus">0m</strong><small>minutes of focus</small></div><div class="panel insight-stat"><span class="insight-icon orange">✦</span><span>Tasks created</span><strong id="allTimeTasks">0</strong><small>steps planned</small></div></div>
+        <section class="panel insights-chart-panel"><div class="panel-heading"><div><div class="eyebrow">THE BIG PICTURE</div><h2>Weekly completion rhythm</h2></div><span class="chart-tag">7 DAY VIEW</span></div><div id="insightsChart" class="bar-chart large-chart"></div><p class="muted chart-note">This chart updates automatically when you complete tasks.</p></section>
+      </section>
+
+      <section id="focusPage" class="page-section hidden">
+        <div class="page-title-row"><div><div class="eyebrow">DEEP WORK MODE</div><h1>Enter your <span class="gradient-text">focus.</span></h1><p class="muted">Give one thing your full attention.</p></div></div>
+        <div class="focus-layout"><section class="panel focus-panel"><div class="focus-mode-label"><span class="pulse-dot"></span> FOCUS SESSION</div><div class="timer-ring"><svg viewBox="0 0 240 240" aria-hidden="true"><circle class="timer-track" cx="120" cy="120" r="106"></circle><circle id="timerProgress" class="timer-progress" cx="120" cy="120" r="106"></circle></svg><div class="timer-center"><span id="timerMode">FOCUS TIME</span><strong id="timerDisplay">25:00</strong><small id="timerSubtext">One tab. One task.</small></div></div><div class="timer-presets"><button class="preset-btn active" data-minutes="25">25 min</button><button class="preset-btn" data-minutes="15">15 min</button><button class="preset-btn" data-minutes="5">5 min break</button></div><div class="timer-actions"><button id="timerStart" class="primary-btn">Start focus <span>▶</span></button><button id="timerReset" class="secondary-btn">Reset</button></div><p class="timer-tip">Tip: Put your phone away and start with one small task.</p></section><section class="panel focus-side"><div class="eyebrow">YOUR SESSION</div><h2>Make room for focus.</h2><p class="muted">Every completed session counts toward your focus time. Keep showing up, even if it's just for a few minutes.</p><div class="focus-mini-stat"><span>Today’s focus time</span><strong><span id="focusTodayDetail">0</span> <small>min</small></strong></div><div class="focus-mini-stat"><span>Sessions completed</span><strong id="sessionsToday">0</strong></div><div class="focus-reminder"><span>✦</span><p>“Concentrate all your thoughts upon the work at hand.”</p></div></section></div>
+      </section>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="script.js"></script>
 </body>
 </html>
